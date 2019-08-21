@@ -177,16 +177,9 @@ func (c *Cache) fillStatus(group string, request *source.Request, peerAddr strin
 	} else {
 		collectionExists := false
 		peerExists := false
-		for collection, synced := range info.synced {
-			if collection == request.Collection {
-				collectionExists = true
-				for addr := range synced {
-					if addr == peerAddr {
-						peerExists = true
-						break
-					}
-				}
-			}
+		if synced, ok := info.synced[request.Collection]; ok {
+			collectionExists = true
+			_, peerExists = synced[peerAddr]
 		}
 		if !collectionExists {
 			//initiate the synced map
