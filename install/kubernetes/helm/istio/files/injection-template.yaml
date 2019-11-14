@@ -102,6 +102,7 @@ containers:
   - "{{ formatDuration .ProxyConfig.ParentShutdownDuration }}"
   - --discoveryAddress
   - "{{ annotation .ObjectMeta `sidecar.istio.io/discoveryAddress` .ProxyConfig.DiscoveryAddress }}"
+{{- if .Values.tracing.enabled }}
 {{- if eq .Values.global.proxy.tracer "lightstep" }}
   - --lightstepAddress
   - "{{ .ProxyConfig.GetTracing.GetLightstep.GetAddress }}"
@@ -116,6 +117,7 @@ containers:
 {{- else if eq .Values.global.proxy.tracer "datadog" }}
   - --datadogAgentAddress
   - "{{ .ProxyConfig.GetTracing.GetDatadog.GetAddress }}"
+{{- end }}
 {{- end }}
 {{- if .Values.global.proxy.logLevel }}
   - --proxyLogLevel={{ .Values.global.proxy.logLevel }}
