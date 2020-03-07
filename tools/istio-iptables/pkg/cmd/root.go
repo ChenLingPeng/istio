@@ -86,6 +86,7 @@ func constructConfig() *config.Config {
 		OutboundPortsExclude:    viper.GetString(constants.LocalOutboundPortsExclude),
 		OutboundIPRangesInclude: viper.GetString(constants.ServiceCidr),
 		OutboundIPRangesExclude: viper.GetString(constants.ServiceExcludeCidr),
+		BindPodIPPorts:          viper.GetString(constants.BindPodIPPorts),
 		KubevirtInterfaces:      viper.GetString(constants.KubeVirtInterfaces),
 		IptablesProbePort:       uint16(viper.GetUint(constants.IptablesProbePort)),
 		ProbeTimeout:            viper.GetDuration(constants.ProbeTimeout),
@@ -118,6 +119,7 @@ func constructConfig() *config.Config {
 		panic(err)
 	}
 	cfg.EnableInboundIPv6 = podIP.To4() == nil
+	cfg.PodIP = podIP
 
 	return cfg
 }
@@ -223,6 +225,13 @@ func init() {
 		handleError(err)
 	}
 	viper.SetDefault(constants.LocalOutboundPortsExclude, "")
+
+	rootCmd.Flags().StringP(constants.BindPodIPPorts, "l", "",
+		"Comma separated list of inbound ports for which are binding to pod IP only")
+	if err := viper.BindPFlag(constants.BindPodIPPorts, rootCmd.Flags().Lookup(constants.BindPodIPPorts)); err != nil {
+		handleError(err)
+	}
+	viper.SetDefault(constants.BindPodIPPorts, "")
 
 	rootCmd.Flags().StringP(constants.KubeVirtInterfaces, "k", "",
 		"Comma separated list of virtual interfaces whose inbound traffic (from VM) will be treated as outbound")

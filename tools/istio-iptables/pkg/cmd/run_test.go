@@ -40,6 +40,7 @@ func constructTestConfig() *config.Config {
 		OutboundPortsExclude:    "",
 		OutboundIPRangesInclude: "",
 		OutboundIPRangesExclude: "",
+		BindPodIPPorts:          "",
 		KubevirtInterfaces:      "",
 		EnableInboundIPv6:       false,
 	}
@@ -555,5 +556,44 @@ func TestHandleInboundIpv4RulesWithUidGid(t *testing.T) {
 
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
+	}
+}
+
+func TestHandleBindPodIPPortsRules(t *testing.T) {
+	cfg := constructConfig()
+	cfg.ProxyUID = "1337"
+	cfg.ProxyGID = "1337"
+	cfg.BindPodIPPorts = "6666,7777"
+	cfg.DryRun = true
+	cfg.PodIP = net.ParseIP("1.2.3.4")
+	iptConfigurator := NewIptablesConfigurator(cfg, &dep.StdoutStubDependencies{})
+	iptConfigurator.cfg.EnableInboundIPv6 = false
+	iptConfigurator.run()
+	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
+	expected := []string{
+		"iptables -t nat -N ISTIO_REDIRECT",
+		"iptables -t nat -N ISTIO_IN_REDIRECT",
+		"iptables -t nat -N ISTIO_OUTPUT",
+		"iptables -t nat -N ISTIO_BIND_PORT",
+		"iptables -t nat -A ISTIO_REDIRECT -p tcp -j REDIRECT --to-port 15001",
+		"iptables -t nat -A ISTIO_IN_REDIRECT -p tcp -j REDIRECT --to-port 15001",
+		"iptables -t nat -A OUTPUT -p tcp -j ISTIO_OUTPUT",
+		"iptables -t nat -A ISTIO_OUTPUT -d 127.0.0.1/32 -p tcp -m owner --uid-owner 1337 -m tcp --dport 6666 -j ISTIO_BIND_PORT",
+		"iptables -t nat -A ISTIO_OUTPUT -d 127.0.0.1/32 -p tcp -m owner --gid-owner 1337 -m tcp --dport 6666 -j ISTIO_BIND_PORT",
+		"iptables -t nat -A ISTIO_OUTPUT -d 127.0.0.1/32 -p tcp -m owner --uid-owner 1337 -m tcp --dport 7777 -j ISTIO_BIND_PORT",
+		"iptables -t nat -A ISTIO_OUTPUT -d 127.0.0.1/32 -p tcp -m owner --gid-owner 1337 -m tcp --dport 7777 -j ISTIO_BIND_PORT",
+		"iptables -t nat -A ISTIO_BIND_PORT -j DNAT --to-destination 1.2.3.4",
+		"iptables -t nat -A ISTIO_BIND_PORT -j ACCEPT",
+		"iptables -t nat -A ISTIO_OUTPUT -o lo -s 127.0.0.6/32 -j RETURN",
+		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 1337 -j ISTIO_IN_REDIRECT",
+		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 1337 -j RETURN",
+		"iptables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 1337 -j RETURN",
+		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 1337 -j ISTIO_IN_REDIRECT",
+		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 1337 -j RETURN",
+		"iptables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 1337 -j RETURN",
+		"iptables -t nat -A ISTIO_OUTPUT -d 127.0.0.1/32 -j RETURN",
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Output mismatch.\nExpected: %#v\nActual:   %#v", expected, actual)
 	}
 }

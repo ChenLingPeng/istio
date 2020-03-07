@@ -17,6 +17,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"time"
 
 	"istio.io/pkg/log"
@@ -39,12 +40,14 @@ type Config struct {
 	OutboundIPRangesExclude string        `json:"OUTBOUND_IPRANGES_EXCLUDE"`
 	KubevirtInterfaces      string        `json:"KUBEVIRT_INTERFACES"`
 	IptablesProbePort       uint16        `json:"IPTABLES_PROBE_PORT"`
+	BindPodIPPorts          string        `json:"BIND_PODIP_PORTS"`
 	ProbeTimeout            time.Duration `json:"PROBE_TIMEOUT"`
 	DryRun                  bool          `json:"DRY_RUN"`
 	RestoreFormat           bool          `json:"RESTORE_FORMAT"`
 	SkipRuleApply           bool          `json:"SKIP_RULE_APPLY"`
 	RunValidation           bool          `json:"RUN_VALIDATION"`
 	EnableInboundIPv6       bool          `json:"ENABLE_INBOUND_IPV6"`
+	PodIP                   net.IP        `json:"PODIP"`
 }
 
 func (c *Config) String() string {
@@ -72,5 +75,6 @@ func (c *Config) Print() {
 	fmt.Println(fmt.Sprintf("OUTBOUND_PORTS_EXCLUDE=%s", c.OutboundPortsExclude))
 	fmt.Println(fmt.Sprintf("KUBEVIRT_INTERFACES=%s", c.KubevirtInterfaces))
 	fmt.Println(fmt.Sprintf("ENABLE_INBOUND_IPV6=%t", c.EnableInboundIPv6))
+	fmt.Println(fmt.Sprintf("BIND_PODIP_PORTS=%s", c.BindPodIPPorts))
 	fmt.Println("")
 }

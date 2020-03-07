@@ -226,6 +226,19 @@ func (iptConfigurator *IptablesConfigurator) handleInboundIpv6Rules(ipv6RangesEx
 		}
 	}
 
+	if len(iptConfigurator.cfg.BindPodIPPorts) > 0 {
+		for _, port := range split(iptConfigurator.cfg.BindPodIPPorts) {
+			for _, uid := range split(iptConfigurator.cfg.ProxyUID) {
+				iptConfigurator.iptables.AppendRuleV6(constants.ISTIOOUTPUT, constants.NAT, "-d", "::1/128", "-p", "tcp", "-m", "owner", "--uid-owner", uid, "-m", "tcp", "--dport", port, "-j", constants.ISTIOBINDPORT) // nolint: lll
+			}
+			for _, gid := range split(iptConfigurator.cfg.ProxyGID) {
+				iptConfigurator.iptables.AppendRuleV6(constants.ISTIOOUTPUT, constants.NAT, "-d", "::1/128", "-p", "tcp", "-m", "owner", "--gid-owner", gid, "-m", "tcp", "--dport", port, "-j", constants.ISTIOBINDPORT) // nolint: lll
+			}
+		}
+		iptConfigurator.iptables.AppendRuleV6(constants.ISTIOBINDPORT, constants.NAT, "-j", "DNAT", "--to-destination", iptConfigurator.cfg.PodIP.String())
+		iptConfigurator.iptables.AppendRuleV6(constants.ISTIOBINDPORT, constants.NAT, "-j", "ACCEPT")
+	}
+
 	// ::6 is bind connect from inbound passthrough cluster
 	iptConfigurator.iptables.AppendRuleV6(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-s", "::6/128", "-j", constants.RETURN)
 
@@ -373,6 +386,19 @@ func (iptConfigurator *IptablesConfigurator) run() {
 		for _, port := range split(iptConfigurator.cfg.OutboundPortsExclude) {
 			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-p", constants.TCP, "--dport", port, "-j", constants.RETURN)
 		}
+	}
+
+	if len(iptConfigurator.cfg.BindPodIPPorts) > 0 && iptConfigurator.cfg.PodIP.To4() != nil {
+		for _, port := range split(iptConfigurator.cfg.BindPodIPPorts) {
+			for _, uid := range split(iptConfigurator.cfg.ProxyUID) {
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-d", "127.0.0.1/32", "-p", "tcp", "-m", "owner", "--uid-owner", uid, "-m", "tcp", "--dport", port, "-j", constants.ISTIOBINDPORT) // nolint: lll
+			}
+			for _, gid := range split(iptConfigurator.cfg.ProxyGID) {
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-d", "127.0.0.1/32", "-p", "tcp", "-m", "owner", "--gid-owner", gid, "-m", "tcp", "--dport", port, "-j", constants.ISTIOBINDPORT) // nolint: lll
+			}
+		}
+		iptConfigurator.iptables.AppendRuleV4(constants.ISTIOBINDPORT, constants.NAT, "-j", "DNAT", "--to-destination", iptConfigurator.cfg.PodIP.String())
+		iptConfigurator.iptables.AppendRuleV4(constants.ISTIOBINDPORT, constants.NAT, "-j", "ACCEPT")
 	}
 
 	// 127.0.0.6 is bind connect from inbound passthrough cluster

@@ -34,14 +34,14 @@ func removeOldChains(ext dep.Dependencies, cmd string) {
 	ext.RunQuietlyAndIgnore(cmd, "-t", constants.NAT, "-D", constants.OUTPUT, "-p", constants.TCP, "-j", constants.ISTIOOUTPUT)
 
 	// Flush and delete the istio chains from NAT table.
-	chains := []string{constants.ISTIOOUTPUT, constants.ISTIOINBOUND}
+	chains := []string{constants.ISTIOOUTPUT, constants.ISTIOINBOUND, constants.ISTIOBINDPORT}
 	flushAndDeleteChains(ext, cmd, constants.NAT, chains)
 	// Flush and delete the istio chains from MANGLE table.
 	chains = []string{constants.ISTIOINBOUND, constants.ISTIODIVERT, constants.ISTIOTPROXY}
 	flushAndDeleteChains(ext, cmd, constants.MANGLE, chains)
 
 	// Must be last, the others refer to it
-	chains = []string{constants.ISTIOREDIRECT, constants.ISTIOINREDIRECT}
+	chains = []string{constants.ISTIOREDIRECT, constants.ISTIOINREDIRECT, constants.ISTIOBINDPORT}
 	flushAndDeleteChains(ext, cmd, constants.NAT, chains)
 }
 

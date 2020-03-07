@@ -87,6 +87,7 @@ var (
 		annotation.SidecarTrafficIncludeInboundPorts.Name:         ValidateIncludeInboundPorts,
 		annotation.SidecarTrafficExcludeInboundPorts.Name:         ValidateExcludeInboundPorts,
 		annotation.SidecarTrafficExcludeOutboundPorts.Name:        ValidateExcludeOutboundPorts,
+		annotation.SidecarTrafficBindPodIPPorts.Name:              ValidateBindPodIPPorts,
 		annotation.SidecarTrafficKubevirtInterfaces.Name:          alwaysValidFunc,
 	}
 )
@@ -272,6 +273,10 @@ func ValidateExcludeInboundPorts(ports string) error {
 // ValidateExcludeOutboundPorts validates the excludeOutboundPorts parameter
 func ValidateExcludeOutboundPorts(ports string) error {
 	return validatePortList("excludeOutboundPorts", ports)
+}
+
+func ValidateBindPodIPPorts(ports string) error {
+	return validatePortList("bindPodIPPorts", ports)
 }
 
 // validateStatusPort validates the statusPort parameter

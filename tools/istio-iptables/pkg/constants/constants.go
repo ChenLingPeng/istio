@@ -60,6 +60,7 @@ const (
 	ISTIOTPROXY     = "ISTIO_TPROXY"
 	ISTIOREDIRECT   = "ISTIO_REDIRECT"
 	ISTIOINREDIRECT = "ISTIO_IN_REDIRECT"
+	ISTIOBINDPORT   = "ISTIO_BIND_PORT"
 )
 
 // Constants used in cobra/viper CLI
@@ -69,6 +70,7 @@ const (
 	InboundTProxyRouteTable   = "istio-inbound-tproxy-route-table"
 	InboundPorts              = "istio-inbound-ports"
 	LocalExcludePorts         = "istio-local-exclude-ports"
+	BindPodIPPorts            = "istio-bind-podip-ports"
 	ServiceCidr               = "istio-service-cidr"
 	ServiceExcludeCidr        = "istio-service-exclude-cidr"
 	LocalOutboundPortsExclude = "istio-local-outbound-ports-exclude"

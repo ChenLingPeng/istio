@@ -43,6 +43,10 @@ template: |
     - "-k"
     - "{{ index .ObjectMeta.Annotations `traffic.sidecar.istio.io/kubevirtInterfaces` }}"
     {{ end -}}
+    {{ if (isset .ObjectMeta.Annotations `traffic.sidecar.istio.io/podipport`) -}}
+    - "-l"
+    - "{{ annotation .ObjectMeta `traffic.sidecar.istio.io/podipport` `` }}"
+    {{ end -}}
     {{ if .Values.istio_cni.enabled -}}
     - "--run-validation"
     - "--skip-rule-apply"
@@ -403,3 +407,4 @@ template: |
     traffic.sidecar.istio.io/excludeOutboundPorts: "{{ annotation .ObjectMeta `traffic.sidecar.istio.io/excludeOutboundPorts` .Values.global.proxy.excludeOutboundPorts }}"
   {{- end }}
     traffic.sidecar.istio.io/kubevirtInterfaces: "{{ index .ObjectMeta.Annotations `traffic.sidecar.istio.io/kubevirtInterfaces` }}"
+    traffic.sidecar.istio.io/podipport: "{{ annotation .ObjectMeta `traffic.sidecar.istio.io/podipport` `` }}"

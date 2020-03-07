@@ -26,6 +26,7 @@ OUTBOUND_IP_RANGES_EXCLUDE=9.9.0.0/16
 OUTBOUND_PORTS_EXCLUDE=
 KUBEVIRT_INTERFACES=eth1,eth2
 ENABLE_INBOUND_IPV6=false
+BIND_PODIP_PORTS=
 
 ip -f inet rule add fwmark 1337 lookup 133
 ip -f inet route add local default dev lo table 133
