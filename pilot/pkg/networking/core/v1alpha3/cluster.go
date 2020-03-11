@@ -17,6 +17,7 @@ package v1alpha3
 import (
 	"fmt"
 	"math"
+	"net"
 	"strconv"
 	"strings"
 
@@ -543,12 +544,13 @@ func (configgen *ConfigGeneratorImpl) buildInboundClusters(proxy *model.Proxy,
 			// Filter out service instances with the same port as we are going to mark them as duplicates any way
 			// in normalizeClusters method.
 			if !have[instance.ServicePort] {
+				bind := getActualInboundBindAddress(proxy, instance.ServicePort.Port)
 				pluginParams := &plugin.InputParams{
 					Node:            proxy,
 					ServiceInstance: instance,
 					Port:            instance.ServicePort,
 					Push:            push,
-					Bind:            actualLocalHost,
+					Bind:            bind,
 				}
 				localCluster := configgen.buildInboundClusterForPortOrUDS(pluginParams)
 				clusters = append(clusters, localCluster)
@@ -580,7 +582,8 @@ func (configgen *ConfigGeneratorImpl) buildInboundClusters(proxy *model.Proxy,
 			// When building an inbound cluster for the ingress listener, we take the defaultEndpoint specified
 			// by the user and parse it into host:port or a unix domain socket
 			// The default endpoint can be 127.0.0.1:port or :port or unix domain socket
-			endpointAddress := actualLocalHost
+			bind := getActualInboundBindAddress(proxy, listenPort.Port)
+			endpointAddress := bind
 			endpointFamily := model.AddressFamilyTCP
 			port := 0
 			var err error
@@ -657,6 +660,24 @@ func (configgen *ConfigGeneratorImpl) buildInboundClusterForPortOrUDS(pluginPara
 	localityLbEndpoints := buildInboundLocalityLbEndpoints(pluginParams.Bind, instance.Endpoint.EndpointPort)
 	localCluster := buildDefaultCluster(pluginParams.Push, clusterName, apiv2.Cluster_STATIC, localityLbEndpoints,
 		model.TrafficDirectionInbound, pluginParams.Node, nil, false)
+	endpointIP := net.ParseIP(pluginParams.Bind)
+	if endpointIP == nil {
+		log.Errorf("parse bind %s failed, should never happen", pluginParams.Bind)
+		return nil
+	}
+	localAddr := LocalhostIPv6Address
+	if endpointIP.To4() != nil {
+		localAddr = LocalhostAddress
+	}
+	// specific the
+	localCluster.UpstreamBindConfig = &core.BindConfig{
+		SourceAddress: &core.SocketAddress{
+			Address: localAddr,
+			PortSpecifier: &core.SocketAddress_PortValue{
+				PortValue: uint32(0),
+			},
+		},
+	}
 	// If stat name is configured, build the alt statname.
 	if len(pluginParams.Push.Mesh.InboundClusterStatName) != 0 {
 		localCluster.AltStatName = altStatName(pluginParams.Push.Mesh.InboundClusterStatName,

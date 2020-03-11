@@ -2151,6 +2151,35 @@ func getActualWildcardAndLocalHost(node *model.Proxy) (string, string) {
 	return WildcardIPv6Address, LocalhostIPv6Address
 }
 
+// getActualInboundBindAddress deside which ip should be bind for inbound.
+// default return 127.0.0.1/::1, if user specific use podIP in annotation,
+// return the podIP for binding
+func getActualInboundBindAddress(node *model.Proxy, port int) string {
+	bindPodIP := false
+	for _, p := range node.Metadata.BindPodIPPorts {
+		if p == port {
+			bindPodIP = true
+			break
+		}
+	}
+	for i := 0; i < len(node.IPAddresses); i++ {
+		addr := net.ParseIP(node.IPAddresses[i])
+		if addr == nil {
+			// Should not happen, invalid IP in proxy's IPAddresses slice should have been caught earlier,
+			// skip it to prevent a panic.
+			continue
+		}
+		if bindPodIP {
+			return node.IPAddresses[i]
+		}
+		if addr.To4() != nil {
+			return LocalhostAddress
+		}
+		return LocalhostIPv6Address
+	}
+	return LocalhostAddress
+}
+
 func ipv4AndIpv6Support(node *model.Proxy) (bool, bool) {
 	ipv4, ipv6 := false, false
 	for i := 0; i < len(node.IPAddresses); i++ {
